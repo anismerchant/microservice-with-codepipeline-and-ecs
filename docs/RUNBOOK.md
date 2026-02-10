@@ -1,58 +1,68 @@
 # Runbook
 
-This document describes how to operate, deploy, and troubleshoot the CI/CD system.
+This document describes how to operate, observe, and troubleshoot the system.
 
 ## Normal Operation
 
-### Trigger a Deployment
-- Push code to the GitHub repository.
-- CodePipeline triggers automatically.
-- No manual intervention required.
+- Deployments are fully automated via CI/CD.
+- No manual container restarts or server access is required.
+- ECS services maintain desired task count automatically.
 
-## Verify Deployment
+## Deploying a Change
 
-### Check Pipeline
-- AWS Console → CodePipeline
-- Ensure all stages are green
+```
+git push
+|
+v
+CodePipeline → CodeBuild → ECR → ECS
+```
 
-### Check Build
-- AWS Console → CodeBuild
-- Verify build logs
-- Confirm Docker image pushed to ECR
+Expected result:
+- New task revision created
+- Old tasks drained
+- New tasks pass health checks
+- Traffic shifts automatically
 
-### Check Runtime
-- AWS Console → ECS → Cluster → Service
-- Ensure desired tasks == running tasks
+## Health Checks
 
-## Common Failures
+- Health checks are performed by the Application Load Balancer.
+- Unhealthy tasks never receive traffic.
+- ECS replaces failed tasks automatically.
+
+## Monitoring
+
+Primary signals:
+- **CodePipeline**: build or deploy failures
+- **ECS Service Events**: task restarts, deployment status
+- **CloudWatch Logs**: application logs per container
+
+## Common Failure Scenarios
 
 ### Build Failure
-**Symptoms**
-- Pipeline stops at Build stage
+- Cause: Docker build error or test failure
+- Action: Check CodeBuild logs
 
-**Actions**
-- Inspect CodeBuild logs
-- Fix Dockerfile or buildspec.yml
-- Push new commit
+### Deployment Stuck
+- Cause: Health checks failing
+- Action:
+  - Verify container port
+  - Verify ALB target group health check path
+  - Check application startup logs
 
-### Image Pull Failure
-**Symptoms**
-- ECS tasks fail to start
-
-**Actions**
-- Verify ECR image exists
-- Check task execution IAM role
-- Confirm image URI is correct
-
-### Application Not Reachable
-**Symptoms**
-- Load balancer returns 5xx or timeout
-
-**Actions**
-- Check ECS task health
-- Verify container port mapping
-- Check security group inbound rules
+### Task Keeps Restarting
+- Cause: Application crash or misconfiguration
+- Action: Inspect CloudWatch logs for the task
 
 ## Rollback
-- Re-run pipeline using last successful commit
-- ECS will redeploy previous task revision
+
+- ECS automatically keeps previous task revisions.
+- Rolling back means redeploying the last known good image.
+- No infrastructure changes are required.
+
+## What Not To Do
+
+- Do not SSH into containers
+- Do not manually modify ECS tasks
+- Do not deploy outside the pipeline
+
+All changes should flow through CI/CD.
