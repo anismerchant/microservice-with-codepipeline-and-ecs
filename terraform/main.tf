@@ -16,7 +16,12 @@ module "compute" {
 
 module "ecr" {
   source           = "./modules/ecr"
-  repository_name  = "cicd-automation-app"
+  repository_name = "backend"
+}
+
+module "ecr_frontend" {
+  source          = "./modules/ecr"
+  repository_name = "frontend"
 }
 
 module "iam" {
