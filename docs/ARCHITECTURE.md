@@ -113,6 +113,94 @@ Amazon ECR          Amazon ECR
   * `/api/*` → backend service
 * Performs health checks on ECS tasks.
 
+## Service and Container Model
+
+**Each service = a logical service backed by many containers.**
+
+Not one container.
+Not a cluster by itself.
+A **service is a managed group of identical containers.**
+
+## What “service” means in *this* architecture (ECS terms)
+
+```
+ECS Cluster
+  |
+  +-- ECS Service: frontend
+  |     |
+  |     +-- Task (container)  ← running copy
+  |     +-- Task (container)
+  |     +-- Task (container)
+  |
+  +-- ECS Service: backend
+        |
+        +-- Task (container)
+        +-- Task (container)
+```
+
+### Definitions (keep these straight)
+
+* **Container**
+  A single running Docker instance.
+
+* **Task Definition**
+  Blueprint for how a container runs (image, port, env vars).
+
+* **Task**
+  A running instance of a task definition (one or more containers).
+
+* **ECS Service**
+  Ensures *N copies* of a task are always running.
+  Handles:
+
+  * scaling
+  * rolling deployments
+  * health checks
+  * restarts
+
+* **ECS Cluster**
+  A logical pool where services run (Fargate capacity).
+
+* **Frontend service**
+
+  * One task definition
+  * One container per task
+  * Multiple running tasks for availability
+
+* **Backend service**
+
+  * One task definition
+  * One container per task
+  * Multiple running tasks for availability
+
+> A service = **a scalable group of containers that collectively represent the frontend or backend**
+
+## Why this matters (architectural reason)
+
+If it were *one container*:
+
+* No redundancy
+* No rolling deploys
+* No health-based replacement
+
+If it were *one big container for everything*:
+
+* Tight coupling
+* No independent scaling
+* Slower deployments
+
+ECS Service gives you:
+
+* High availability
+* Zero-downtime deploys
+* Independent scaling per service
+
+## Mental shortcut (remember this)
+
+> **Container runs code.
+> Service runs containers correctly.
+> Cluster runs services.**
+
 ## Infrastructure Ownership Boundaries
 
 ```
