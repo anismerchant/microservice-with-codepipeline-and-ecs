@@ -51,10 +51,21 @@ module "alb" {
   subnet_ids         = module.network.public_subnet_ids
 }
 
-module "codebuild" {
+module "codebuild_backend" {
   source          = "./modules/codebuild"
   role_arn        = module.iam.codebuild_role_arn
+  project_name    = "backend-build"
+  buildspec_path  = "pipeline/backend-buildspec.yml"
   ecr_repo_url    = module.ecr.repository_url
+  github_repo_url = var.github_repo_url
+}
+
+module "codebuild_frontend" {
+  source          = "./modules/codebuild"
+  role_arn        = module.iam.codebuild_role_arn
+  project_name    = "frontend-build"
+  buildspec_path  = "pipeline/frontend-buildspec.yml"
+  ecr_repo_url    = module.ecr_frontend.repository_url
   github_repo_url = var.github_repo_url
 }
 
