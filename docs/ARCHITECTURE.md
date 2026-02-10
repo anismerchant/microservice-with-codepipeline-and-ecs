@@ -4,18 +4,18 @@
 
 This project implements a **fully automated CI/CD architecture on AWS** for a **microservices-style application** consisting of:
 
-* **Backend API** (containerized service)
-* **Frontend UI** (containerized service)
+- **Backend API** (containerized service)
+- **Frontend UI** (containerized service)
 
 Both services are built, containerized, and deployed automatically using managed AWS services.
 Infrastructure is defined using **Terraform** and remains stable while application services evolve independently.
 
 Goals:
 
-* Zero manual deployments
-* Clear separation of concerns
-* Production-grade AWS patterns
-* Minimal operational overhead
+- Zero manual deployments
+- Clear separation of concerns
+- Production-grade AWS patterns
+- Minimal operational overhead
 
 ## High-Level Architecture
 
@@ -58,60 +58,57 @@ Amazon ECR          Amazon ECR
 
 ### GitHub
 
-* Source of truth for:
+- Source of truth for:
+  - Application code (`app/`)
+  - Pipeline definitions (`pipeline/`)
+  - Infrastructure as Code (`terraform/`)
 
-  * Application code (`app/`)
-  * Pipeline definitions (`pipeline/`)
-  * Infrastructure as Code (`terraform/`)
-* Any push triggers the CI/CD workflow.
+- Any push triggers the CI/CD workflow.
 
 ### AWS CodePipeline
 
-* Orchestrates the end-to-end CI/CD process.
-* Stages:
-
-  * **Source** (GitHub)
-  * **Build** (parallel backend + frontend builds)
-  * **Deploy** (ECS)
+- Orchestrates the end-to-end CI/CD process.
+- Stages:
+  - **Source** (GitHub)
+  - **Build** (parallel backend + frontend builds)
+  - **Deploy** (ECS)
 
 ### AWS CodeBuild
 
-* Builds Docker images using service-specific buildspec files:
+- Builds Docker images using service-specific buildspec files:
+  - `backend-buildspec.yml`
+  - `frontend-buildspec.yml`
 
-  * `backend-buildspec.yml`
-  * `frontend-buildspec.yml`
-* Responsibilities:
-
-  * Compile application code
-  * Build Docker images
-  * Push images to Amazon ECR
-  * Generate deployment metadata for ECS
+- Responsibilities:
+  - Compile application code
+  - Build Docker images
+  - Push images to Amazon ECR
+  - Generate deployment metadata for ECS
 
 ### Amazon ECR
 
-* Stores versioned container images.
-* Separate repositories per service:
-
-  * Backend image repository
-  * Frontend image repository
+- Stores versioned container images.
+- Separate repositories per service:
+  - Backend image repository
+  - Frontend image repository
 
 ### Amazon ECS (Fargate)
 
-* Runs containers without managing servers.
-* Each service has:
+- Runs containers without managing servers.
+- Each service has:
+  - Its own task definition
+  - Its own ECS service
 
-  * Its own task definition
-  * Its own ECS service
-* Handles rolling deployments automatically.
+- Handles rolling deployments automatically.
 
 ### Application Load Balancer (ALB)
 
-* Public entry point for the system.
-* Routes traffic using path-based rules:
+- Public entry point for the system.
+- Routes traffic using path-based rules:
+  - `/` → frontend service
+  - `/api/*` → backend service
 
-  * `/` → frontend service
-  * `/api/*` → backend service
-* Performs health checks on ECS tasks.
+- Performs health checks on ECS tasks.
 
 ## Service and Container Model
 
@@ -121,7 +118,7 @@ Not one container.
 Not a cluster by itself.
 A **service is a managed group of identical containers.**
 
-## What “service” means in *this* architecture (ECS terms)
+## What “service” means in _this_ architecture (ECS terms)
 
 ```
 ECS Cluster
@@ -140,66 +137,157 @@ ECS Cluster
 
 ### Definitions (keep these straight)
 
-* **Container**
+- **Container**
   A single running Docker instance.
 
-* **Task Definition**
+- **Task Definition**
   Blueprint for how a container runs (image, port, env vars).
 
-* **Task**
+- **Task**
   A running instance of a task definition (one or more containers).
 
-* **ECS Service**
-  Ensures *N copies* of a task are always running.
+- **ECS Service**
+  Ensures _N copies_ of a task are always running.
   Handles:
+  - scaling
+  - rolling deployments
+  - health checks
+  - restarts
 
-  * scaling
-  * rolling deployments
-  * health checks
-  * restarts
-
-* **ECS Cluster**
+- **ECS Cluster**
   A logical pool where services run (Fargate capacity).
 
-* **Frontend service**
+- **Frontend service**
+  - One task definition
+  - One container per task
+  - Multiple running tasks for availability
 
-  * One task definition
-  * One container per task
-  * Multiple running tasks for availability
-
-* **Backend service**
-
-  * One task definition
-  * One container per task
-  * Multiple running tasks for availability
+- **Backend service**
+  - One task definition
+  - One container per task
+  - Multiple running tasks for availability
 
 > A service = **a scalable group of containers that collectively represent the frontend or backend**
 
 ## Why this matters (architectural reason)
 
-If it were *one container*:
+If it were _one container_:
 
-* No redundancy
-* No rolling deploys
-* No health-based replacement
+- No redundancy
+- No rolling deploys
+- No health-based replacement
 
-If it were *one big container for everything*:
+If it were _one big container for everything_:
 
-* Tight coupling
-* No independent scaling
-* Slower deployments
+- Tight coupling
+- No independent scaling
+- Slower deployments
 
 ECS Service gives you:
 
-* High availability
-* Zero-downtime deploys
-* Independent scaling per service
+- High availability
+- Zero-downtime deploys
+- Independent scaling per service
 
 ## Mental shortcut (remember this)
 
-> **Container runs code.
-> Service runs containers correctly.
-> Cluster runs services.**
+- Container runs code.
+- Service runs containers correctly.
+- Cluster runs services.
+
+## Why you see **one EC2** even though you’re using Fargate
+
+### Short answer
+
+- That EC2 is not yours.
+- It is not part of your architecture.
+- You do not depend on it.
+
+When using **ECS with Fargate**:
+
+- AWS still runs containers on physical servers
+- Those servers are abstracted away
+- Sometimes the console surfaces **one underlying host** for visibility
+- **It is not a single point of failure**
+
+You cannot:
+
+- SSH into it
+- Scale it
+- Patch it
+- Rely on it
+
+AWS can move your tasks to **entirely different machines** at any time.
+
+> Seeing “one EC2” does **not** mean your system runs on one server.
+
+## What _actually_ provides availability in Fargate
+
+Availability comes from:
+
+- **Multiple tasks**
+- **Multiple Availability Zones**
+- **ALB health checks**
+- **ECS service reconciliation**
+
+```
+ALB
+ |
+ +-- AZ-A
+ |     +-- Fargate Task (frontend)
+ |     +-- Fargate Task (backend)
+ |
+ +-- AZ-B
+       +-- Fargate Task (frontend)
+       +-- Fargate Task (backend)
+```
+
+If hardware dies:
+
+- Task stops
+- ECS replaces it
+- Traffic never reaches unhealthy tasks
+
+## Failure Model and Availability
+
+This system is designed with the assumption that underlying compute
+can and will fail.
+
+### ECS with Fargate
+
+When using ECS with Fargate, there are no EC2 instances managed by the user.
+
+- AWS owns and operates the underlying servers
+- Tasks are scheduled across multiple Availability Zones
+- If underlying hardware fails, tasks are automatically restarted
+- The Application Load Balancer routes traffic only to healthy tasks
+
+Although the AWS console may display a single underlying host, this host is **not part of the system architecture** and does not represent
+a single point of failure.
+
+Availability is achieved through:
+
+- Multiple running tasks per service
+- ECS service reconciliation
+- ALB health checks
+- Multi–Availability Zone placement
+
+### ECS Service Behavior on Failure
+
+```
+Task or Host Failure
+|
+v
+ECS Detects Failure
+|
+v
+New Task Launched
+|
+v
+ALB Routes Traffic to Healthy Tasks Only
+```
+
+No manual intervention is required, and users do not experience downtime.
 
 ## Infrastructure Ownership Boundaries
 
@@ -212,21 +300,21 @@ docs/        → System documentation
 
 Key principle:
 
-> **Terraform owns infrastructure.
-> Pipelines own delivery.
-> Applications remain infra-agnostic.**
+- Terraform owns infrastructure.
+- Pipelines own delivery.
+- Applications remain infra-agnostic.
 
 ## Deployment Model
 
-* Immutable deployments using ECS task revisions
-* Rolling updates with health checks
-* No in-place server changes
-* Automatic rollback on failure (via ECS service stability)
+- Immutable deployments using ECS task revisions
+- Rolling updates with health checks
+- No in-place server changes
+- Automatic rollback on failure (via ECS service stability)
 
 ## Architecture Characteristics
 
-* Fully automated CI/CD
-* Horizontally scalable
-* Service isolation
-* Production-aligned AWS patterns
-* Clean separation between infrastructure and application code
+- Fully automated CI/CD
+- Horizontally scalable
+- Service isolation
+- Production-aligned AWS patterns
+- Clean separation between infrastructure and application code
