@@ -1,87 +1,144 @@
 # Architecture
 
 ## Overview
-This project implements a CI/CD pipeline on AWS that builds, containerizes, and deploys a Spring Boot application using managed AWS services.
 
-The system is designed to be:
-- Fully automated on code change
-- Container-based
-- Minimal operational overhead
+This project implements a **fully automated CI/CD architecture on AWS** for a **microservices-style application** consisting of:
+
+* **Backend API** (containerized service)
+* **Frontend UI** (containerized service)
+
+Both services are built, containerized, and deployed automatically using managed AWS services.
+Infrastructure is defined using **Terraform** and remains stable while application services evolve independently.
+
+Goals:
+
+* Zero manual deployments
+* Clear separation of concerns
+* Production-grade AWS patterns
+* Minimal operational overhead
 
 ## High-Level Architecture
 
 ```
 Developer
-|
-|  (git push)
-v
-GitHub Repository
-|
-|  Source stage
-v
+  |
+  | git push
+  v
+GitHub
+  |
+  v
 AWS CodePipeline
-|
-|  Build stage
-v
-AWS CodeBuild
-|
-|  docker build + push
-v
-Amazon ECR (Container Registry)
-|
-|  image pull
-v
-Amazon ECS (Fargate)
-|
-|  running tasks
-v
-Application Load Balancer
-|
-v
-End Users
+  |
+  +---------------------+
+  |                     |
+Build Backend        Build Frontend
+(CodeBuild)          (CodeBuild)
+  |                     |
+  v                     v
+Amazon ECR          Amazon ECR
+(backend repo)      (frontend repo)
+  |                     |
+  +----------+----------+
+             |
+             v
+        Amazon ECS (Fargate)
+        ├─ Backend Service
+        └─ Frontend Service
+             |
+             v
+      Application Load Balancer
+      ├─ /api/* → backend
+      └─ /       → frontend
+             |
+             v
+          End Users
 ```
 
 ## Core Components and Responsibilities
 
 ### GitHub
-- Source of truth for application code, pipeline config, and infrastructure code.
+
+* Source of truth for:
+
+  * Application code (`app/`)
+  * Pipeline definitions (`pipeline/`)
+  * Infrastructure as Code (`terraform/`)
+* Any push triggers the CI/CD workflow.
 
 ### AWS CodePipeline
-- Orchestrates the CI/CD workflow.
-- Triggers automatically on changes to the GitHub repository.
+
+* Orchestrates the end-to-end CI/CD process.
+* Stages:
+
+  * **Source** (GitHub)
+  * **Build** (parallel backend + frontend builds)
+  * **Deploy** (ECS)
 
 ### AWS CodeBuild
-- Executes build instructions defined in `buildspec.yml`.
-- Builds Docker image.
-- Pushes image to Amazon ECR.
+
+* Builds Docker images using service-specific buildspec files:
+
+  * `backend-buildspec.yml`
+  * `frontend-buildspec.yml`
+* Responsibilities:
+
+  * Compile application code
+  * Build Docker images
+  * Push images to Amazon ECR
+  * Generate deployment metadata for ECS
 
 ### Amazon ECR
-- Stores versioned Docker images.
-- Acts as the deployment artifact source for ECS.
+
+* Stores versioned container images.
+* Separate repositories per service:
+
+  * Backend image repository
+  * Frontend image repository
 
 ### Amazon ECS (Fargate)
-- Runs containers without managing servers.
-- Pulls images from ECR.
-- Replaces running tasks during deployments.
 
-### Application Load Balancer
-- Routes HTTP traffic to ECS tasks.
-- Provides a stable endpoint for users.
+* Runs containers without managing servers.
+* Each service has:
 
-## Infrastructure Boundary
+  * Its own task definition
+  * Its own ECS service
+* Handles rolling deployments automatically.
+
+### Application Load Balancer (ALB)
+
+* Public entry point for the system.
+* Routes traffic using path-based rules:
+
+  * `/` → frontend service
+  * `/api/*` → backend service
+* Performs health checks on ECS tasks.
+
+## Infrastructure Ownership Boundaries
 
 ```
-terraform/   -> defines AWS resources
-pipeline/    -> consumed by AWS services
-app/         -> application source code
-docs/        -> system documentation
+terraform/   → AWS resources (VPC, ALB, ECS, IAM, ECR, pipelines)
+pipeline/    → CI/CD behavior (buildspecs, deployment specs)
+app/         → Application code (frontend + backend)
+docs/        → System documentation
 ```
 
-Terraform owns **resource creation**.  
-Pipeline files define **runtime behavior**.  
-Application code remains **infra-agnostic**.
+Key principle:
+
+> **Terraform owns infrastructure.
+> Pipelines own delivery.
+> Applications remain infra-agnostic.**
 
 ## Deployment Model
-- Rolling update via ECS service.
-- No in-place server modification.
-- Old tasks are replaced by new task revisions.
+
+* Immutable deployments using ECS task revisions
+* Rolling updates with health checks
+* No in-place server changes
+* Automatic rollback on failure (via ECS service stability)
+
+## Architecture Characteristics
+
+* Fully automated CI/CD
+* Horizontally scalable
+* Service isolation
+* Production-aligned AWS patterns
+* Clean separation between infrastructure and application code
