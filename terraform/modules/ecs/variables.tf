@@ -33,3 +33,11 @@ variable "vpc_id" {
 variable "alb_sg_id" {
   type = string
 }
+
+variable "service_name" {
+  type = string
+}
+
+variable "container_port" {
+  type = number
+}

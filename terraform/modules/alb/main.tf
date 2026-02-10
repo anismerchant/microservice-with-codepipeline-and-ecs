@@ -25,8 +25,31 @@ resource "aws_lb" "this" {
   security_groups    = [aws_security_group.alb_sg.id]
 }
 
-resource "aws_lb_target_group" "this" {
-  name        = "cicd-tg"
+############################
+# Target Groups
+############################
+
+# Frontend target group
+resource "aws_lb_target_group" "frontend" {
+  name        = "frontend-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    path                = "/"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+  }
+}
+
+# Backend target group
+resource "aws_lb_target_group" "backend" {
+  name        = "backend-tg"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -42,13 +65,35 @@ resource "aws_lb_target_group" "this" {
   }
 }
 
+############################
+# Listener and Routing
+############################
+
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
   port              = 80
   protocol          = "HTTP"
 
+  # Default → frontend
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.this.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+}
+
+# Route /api/* → backend
+resource "aws_lb_listener_rule" "backend_api" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 10
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
   }
 }
