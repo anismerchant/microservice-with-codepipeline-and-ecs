@@ -31,6 +31,6 @@ resource "aws_instance" "sandbox" {
   key_name               = aws_key_pair.ssh.key_name
 
   tags = {
-    Name = "CICD Automation AWS Sandbox"
+    Name = "Microservices with Codepipeline and ECS"
   }
 }

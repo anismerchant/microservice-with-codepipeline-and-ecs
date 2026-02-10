@@ -4,7 +4,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "cicd-automation-aws-vpc"
+    Name = "microservices-with-codepipeline-ecs-aws-vpc"
   }
 }
 
@@ -14,7 +14,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "cicd-automation-aws-public-subnet"
+    Name = "microservices-with-codepipeline-ecs-aws-public-subnet"
   }
 }
 
@@ -22,7 +22,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "cicd-automation-aws-igw"
+    Name = "microservices-with-codepipeline-ecs-aws-igw"
   }
 }
 
@@ -35,7 +35,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "cicd-automation-aws-public-rt"
+    Name = "microservices-with-codepipeline-ecs-aws-public-rt"
   }
 }
 
@@ -45,7 +45,7 @@ resource "aws_route_table_association" "public_assoc" {
 }
 
 resource "aws_security_group" "ssh" {
-  name        = "cicd-automation-aws-sg"
+  name        = "microservices-with-codepipeline-ecs-aws-sg"
   description = "Allow SSH access"
   vpc_id      = aws_vpc.main.id
 
@@ -81,7 +81,7 @@ resource "aws_security_group" "ssh" {
   }
 
   tags = {
-    Name = "cicd-automation-aws-sg"
+    Name = "microservices-with-codepipeline-ecs-aws-sg"
   }
 }
 
@@ -92,7 +92,7 @@ resource "aws_subnet" "public_2" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "cicd-automation-aws-public-subnet-2"
+    Name = "microservices-with-codepipeline-ecs-aws-public-subnet-2"
   }
 }
 

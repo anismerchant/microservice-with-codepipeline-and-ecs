@@ -1,9 +1,9 @@
 resource "aws_ecs_cluster" "this" {
-  name = "cicd-automation-cluster"
+  name = "microservices-with-codepipeline-cluster"
 }
 
 resource "aws_ecs_task_definition" "this" {
-  family                   = "cicd-automation-task"
+  family                   = "microservices-with-codepipeline-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
@@ -36,7 +36,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = "cicd-automation-service"
+  name            = "microservices-with-codepipeline-service"
   cluster         = aws_ecs_cluster.this.id
   task_definition  = aws_ecs_task_definition.this.arn
   launch_type     = "FARGATE"
@@ -91,7 +91,7 @@ resource "aws_security_group" "ecs_service" {
 }
 
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/ecs/cicd-automation"
+  name              = "/ecs/microservices-with-codepipeline"
   retention_in_days = 7
 }
 
