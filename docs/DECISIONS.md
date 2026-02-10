@@ -1,64 +1,67 @@
 # Architectural Decisions
 
-This document records key technical decisions and their rationale.
+This document records the major architectural decisions and the reasoning behind them.
 
-## Container Orchestration: Amazon ECS (Fargate)
+## Use ECS with Fargate
 
-**Decision**  
-Use Amazon ECS with Fargate instead of EC2-based ECS or Kubernetes.
+**Decision:** Deploy containers using Amazon ECS with Fargate.
 
-**Why**
-- No server management
-- Native AWS integration
-- Lower operational complexity
-- Suitable for small to medium workloads
+**Why:**
+- No server management or patching
+- Built-in high availability
+- Automatic task replacement on failure
+- Cleaner operational model than ECS on EC2
 
-## CI/CD Orchestration: AWS CodePipeline
+## Separate Frontend and Backend Services
 
-**Decision**  
-Use AWS CodePipeline as the primary CI/CD orchestrator.
+**Decision:** Run frontend and backend as independent ECS services.
 
-**Why**
-- Native integration with GitHub
-- Managed service
-- Clear separation of pipeline stages
+**Why:**
+- Independent scaling
+- Independent deployments
+- Clear separation of concerns
+- Reduced blast radius during failures
 
-## Build System: AWS CodeBuild
+## Path-Based Routing via Application Load Balancer
 
-**Decision**  
-Use CodeBuild for compiling and containerizing the application.
+**Decision:** Use a single ALB with path-based routing.
 
-**Why**
-- Fully managed build environment
-- Native Docker support
-- Integrates directly with ECR and CodePipeline
+```
+/       → frontend service
+/api/*  → backend service
+```
 
-## Container Registry: Amazon ECR
+**Why:**
+- Single public entry point
+- Simple client-side integration
+- No need for separate domains
+- Common production pattern
 
-**Decision**  
-Use Amazon Elastic Container Registry for Docker images.
+## Parallel Builds in CI/CD
 
-**Why**
-- Tight IAM integration
-- Low latency access for ECS
-- No external registry dependency
+**Decision:** Build frontend and backend images in parallel.
 
-## Deployment Strategy: ECS Rolling Update
+**Why:**
+- Faster pipelines
+- Clear ownership per service
+- Failures are isolated to the affected service
 
-**Decision**  
-Use rolling deployments instead of blue/green.
+## Immutable Deployments
 
-**Why**
-- Simpler setup
-- Fewer moving parts
-- Adequate for stateless applications
+**Decision:** Use immutable container deployments via ECS task revisions.
 
-## Infrastructure as Code: Terraform
+**Why:**
+- No in-place changes
+- Easy rollback
+- Predictable deployments
+- Matches cloud-native best practices
 
-**Decision**  
-Use Terraform to provision AWS resources.
+## Infrastructure as Code with Terraform
 
-**Why**
-- Declarative infrastructure
-- Version-controlled changes
-- Clear dependency graph
+**Decision:** Define all infrastructure using Terraform modules.
+
+**Why:**
+- Reproducibility
+- Clear resource ownership
+- Safe incremental changes
+- Easy review and rollback
