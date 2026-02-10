@@ -129,15 +129,19 @@ module "codebuild_frontend" {
 ############################
 
 module "codepipeline" {
-  source                 = "./modules/codepipeline"
-  role_arn               = module.iam.codepipeline_role_arn
-  artifact_bucket        = module.artifact_bucket.bucket_name
-  github_owner           = var.github_owner
-  github_repo            = var.github_repo
-  github_branch          = "main"
-  github_token           = var.github_token
+  source          = "./modules/codepipeline"
+  role_arn        = module.iam.codepipeline_role_arn
+  artifact_bucket = module.artifact_bucket.bucket_name
 
-  codebuild_project_name = module.codebuild_backend.project_name
-  ecs_cluster_name       = module.ecs_backend.cluster_name
-  ecs_service_name       = module.ecs_backend.service_name
+  github_owner  = var.github_owner
+  github_repo   = var.github_repo
+  github_branch = "main"
+  github_token  = var.github_token
+
+  codebuild_backend_project_name  = module.codebuild_backend.project_name
+  codebuild_frontend_project_name = module.codebuild_frontend.project_name
+
+  ecs_cluster_name          = module.ecs_backend.cluster_name
+  ecs_backend_service_name  = module.ecs_backend.service_name
+  ecs_frontend_service_name = module.ecs_frontend.service_name
 }

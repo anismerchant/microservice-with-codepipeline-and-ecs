@@ -1,11 +1,15 @@
 resource "aws_codepipeline" "this" {
-  name     = "spring-petclinic"
+  name     = "microservices-with-codepipeline-ecs"
   role_arn = var.role_arn
 
   artifact_store {
     location = var.artifact_bucket
     type     = "S3"
   }
+
+  ############################
+  # Source
+  ############################
 
   stage {
     name = "Source"
@@ -27,38 +31,75 @@ resource "aws_codepipeline" "this" {
     }
   }
 
+  ############################
+  # Build (parallel)
+  ############################
+
   stage {
     name = "Build"
 
     action {
-      name             = "Build_Image"
+      name             = "Build_Backend"
       category         = "Build"
       owner            = "AWS"
       provider         = "CodeBuild"
       version          = "1"
       input_artifacts  = ["source_output"]
-      output_artifacts = ["build_output"]
+      output_artifacts = ["backend_build_output"]
 
       configuration = {
-        ProjectName = var.codebuild_project_name
+        ProjectName = var.codebuild_backend_project_name
+      }
+    }
+
+    action {
+      name             = "Build_Frontend"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["source_output"]
+      output_artifacts = ["frontend_build_output"]
+
+      configuration = {
+        ProjectName = var.codebuild_frontend_project_name
       }
     }
   }
+
+  ############################
+  # Deploy
+  ############################
 
   stage {
     name = "Deploy"
 
     action {
-      name            = "Deploy_to_ECS"
+      name            = "Deploy_Backend"
       category        = "Deploy"
       owner           = "AWS"
       provider        = "ECS"
       version         = "1"
-      input_artifacts = ["build_output"]
+      input_artifacts = ["backend_build_output"]
 
       configuration = {
         ClusterName = var.ecs_cluster_name
-        ServiceName = var.ecs_service_name
+        ServiceName = var.ecs_backend_service_name
+        FileName    = "imagedefinitions.json"
+      }
+    }
+
+    action {
+      name            = "Deploy_Frontend"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ECS"
+      version         = "1"
+      input_artifacts = ["frontend_build_output"]
+
+      configuration = {
+        ClusterName = var.ecs_cluster_name
+        ServiceName = var.ecs_frontend_service_name
         FileName    = "imagedefinitions.json"
       }
     }
