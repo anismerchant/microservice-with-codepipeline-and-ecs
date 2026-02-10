@@ -49,7 +49,10 @@ module "iam" {
   source = "./modules/iam"
 
   artifact_bucket_arn     = module.artifact_bucket.bucket_arn
-  ecr_repository_arn      = module.ecr_backend.repository_arn
+  ecr_repository_arns     = [
+    module.ecr_backend.repository_arn,
+    module.ecr_frontend.repository_arn
+  ]
   ecs_execution_role_arn  = module.iam.ecs_execution_role_arn
 }
 

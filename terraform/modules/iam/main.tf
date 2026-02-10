@@ -155,7 +155,7 @@ resource "aws_iam_role_policy" "codebuild_ecr_policy" {
           "ecr:PutImage",
           "ecr:UploadLayerPart"
         ]
-        Resource = var.ecr_repository_arn
+        Resource = var.ecr_repository_arns
       }
     ]
   })
@@ -209,5 +209,3 @@ resource "aws_iam_role_policy" "codepipeline_ecs_deploy" {
     ]
   })
 }
-
-
