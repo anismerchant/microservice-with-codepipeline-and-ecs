@@ -1,79 +1,88 @@
 # Data Flow
 
-This document describes how data and control flow through the CI/CD system, from code change to live traffic.
+This document describes how data flows through the system at runtime and during deployments.
 
-## CI/CD Execution Flow
-
-```
-1. Developer pushes code
-2. GitHub webhook triggers pipeline
-3. CodePipeline starts execution
-4. CodeBuild builds application
-5. Docker image pushed to ECR
-6. ECS service deploys new task
-7. Load Balancer routes traffic
-```
-
-## Detailed Flow
-
-### 1. Source Change
-- Developer commits and pushes code to GitHub.
-- GitHub acts as the event source.
+## Runtime Request Flow (User → Application)
 
 ```
-Developer --> GitHub
-```
 
-### 2. Pipeline Trigger
-- GitHub webhook notifies AWS CodePipeline.
-- A new pipeline execution begins.
-
-```
-GitHub --> CodePipeline
-```
-
-### 3. Build Stage
-- CodePipeline invokes CodeBuild.
-- CodeBuild:
-  - Compiles the application
-  - Builds a Docker image
-  - Tags the image
-  - Pushes the image to ECR
-
-```
-CodePipeline --> CodeBuild --> ECR
-```
-
-### 4. Deployment Stage
-- ECS service detects new image.
-- A new task revision is created.
-- Old tasks are replaced with new ones.
-
-```
-ECR --> ECS (Fargate)
-```
-
-### 5. Request Flow (Runtime)
-
-```
-User Request
+User Browser
 |
 v
-Application Load Balancer
+Application Load Balancer (ALB)
+|
+|  Path-based routing
+|
++--> "/"       → Frontend ECS Service
+|
++--> "/api/*"  → Backend ECS Service
+
+```
+
+### Runtime behavior
+- The ALB is the single public entry point.
+- Frontend serves the UI.
+- Frontend calls backend APIs via `/api/*`.
+- Backend processes requests and returns JSON responses.
+- ECS services scale independently.
+
+## CI/CD Deployment Flow (Code → Production)
+
+```
+Developer
+|
+| git push
+v
+GitHub
 |
 v
-ECS Task (Spring Boot App)
+AWS CodePipeline
+|
++---------------------+
+|                     |
+Build Backend        Build Frontend
+(CodeBuild)          (CodeBuild)
+|                     |
+| docker build        | docker build
+| docker push         | docker push
+v                     v
+Amazon ECR          Amazon ECR
+|                     |
++----------+----------+
 |
 v
-HTTP Response
+Amazon ECS
+|
+| new task revision
+v
+ECS Service (rolling update)
 ```
 
-## Failure Boundaries
+### Deployment behavior
+- Each service is built independently.
+- New images are pushed to ECR.
+- ECS pulls the new image.
+- Old tasks are drained.
+- New tasks must pass ALB health checks before traffic is shifted.
+
+## Failure Handling
 
 ```
-Build failure        -> CodeBuild stops pipeline
-Image push failure   -> Deployment blocked
-Task start failure   -> ECS rolls back
+Health Check Fails
+|
+v
+ECS Stops New Task
+|
+v
+Deployment Rolls Back
 ```
 
-Failures are isolated to their stage and do not affect previous successful deployments.
+- Traffic is never routed to unhealthy containers.
+- Previous task revision continues serving requests.
+
+## Key Principles
+
+- Immutable deployments
+- No SSH or manual intervention
+- Infrastructure remains unchanged during app updates
+- Build, release, and runtime concerns are separated
