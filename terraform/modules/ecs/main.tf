@@ -1,9 +1,9 @@
 resource "aws_ecs_cluster" "this" {
-  name = "microservices-with-codepipeline-cluster"
+  name = "microservices-with-codepipeline-and-ecs-cluster"
 }
 
 resource "aws_ecs_task_definition" "this" {
-  family                   = "microservices-with-codepipeline-task"
+  family                   = "microservices-with-codepipeline-and-ecs-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
@@ -36,7 +36,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = "microservices-with-codepipeline-service"
+  name            = "microservices-with-codepipeline-and-ecs-service"
   cluster         = aws_ecs_cluster.this.id
   task_definition  = aws_ecs_task_definition.this.arn
   launch_type     = "FARGATE"
@@ -91,7 +91,7 @@ resource "aws_security_group" "ecs_service" {
 }
 
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/ecs/microservices-with-codepipeline"
+  name              = "/ecs/microservices-with-codepipeline-and-ecs"
   retention_in_days = 7
 }
 

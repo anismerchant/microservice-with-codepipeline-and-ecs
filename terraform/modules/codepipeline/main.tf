@@ -1,5 +1,5 @@
 resource "aws_codepipeline" "this" {
-  name     = "microservices-with-codepipeline-ecs"
+  name     = "microservices-with-codepipeline-and-ecs"
   role_arn = var.role_arn
 
   artifact_store {
