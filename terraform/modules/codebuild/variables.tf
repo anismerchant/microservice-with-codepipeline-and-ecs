@@ -15,5 +15,5 @@ variable "project_name" {
 }
 
 variable "buildspec_path" {
-  type    = string
+  type = string
 }

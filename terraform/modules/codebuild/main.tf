@@ -1,5 +1,5 @@
 resource "aws_codebuild_project" "this" {
-  name          = "microservices-with-codepipeline-and-ecs"
+  name         = "microservices-with-codepipeline-and-ecs"
   service_role = var.role_arn
 
   artifacts {
@@ -7,10 +7,10 @@ resource "aws_codebuild_project" "this" {
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/standard:7.0"
-    type                        = "LINUX_CONTAINER"
-    privileged_mode             = true
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:7.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
 
     environment_variable {
       name  = "ECR_REPO"

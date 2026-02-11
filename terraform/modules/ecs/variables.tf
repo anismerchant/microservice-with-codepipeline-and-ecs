@@ -23,11 +23,11 @@ variable "alb_listener_dep" {
 }
 
 variable "aws_region" {
-  type    = string
+  type = string
 }
 
 variable "vpc_id" {
-    type = string
+  type = string
 }
 
 variable "alb_sg_id" {

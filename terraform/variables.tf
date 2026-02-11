@@ -1,9 +1,9 @@
 # Input variables will be defined here
 
 variable "aws_region" {
-  type    = string
+  type        = string
   description = "AWS region to deploy resources into"
-  default = "us-east-2"
+  default     = "us-east-2"
 }
 
 variable "ssh_public_key_path" {
@@ -27,8 +27,8 @@ variable "github_repo" {
 }
 
 variable "github_branch" {
-  type        = string
-  default     = "main"
+  type    = string
+  default = "main"
 }
 
 variable "github_token" {

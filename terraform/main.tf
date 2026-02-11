@@ -23,13 +23,13 @@ module "compute" {
 ############################
 
 module "ecr_backend" {
-  source           = "./modules/ecr"
-  repository_name  = "backend"
+  source          = "./modules/ecr"
+  repository_name = "backend"
 }
 
 module "ecr_frontend" {
-  source           = "./modules/ecr"
-  repository_name  = "frontend"
+  source          = "./modules/ecr"
+  repository_name = "frontend"
 }
 
 ############################
@@ -48,12 +48,12 @@ module "artifact_bucket" {
 module "iam" {
   source = "./modules/iam"
 
-  artifact_bucket_arn     = module.artifact_bucket.bucket_arn
-  ecr_repository_arns     = [
+  artifact_bucket_arn = module.artifact_bucket.bucket_arn
+  ecr_repository_arns = [
     module.ecr_backend.repository_arn,
     module.ecr_frontend.repository_arn
   ]
-  ecs_execution_role_arn  = module.iam.ecs_execution_role_arn
+  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
 }
 
 ############################
@@ -61,9 +61,9 @@ module "iam" {
 ############################
 
 module "alb" {
-  source      = "./modules/alb"
-  vpc_id      = module.network.vpc_id
-  subnet_ids  = module.network.public_subnet_ids
+  source     = "./modules/alb"
+  vpc_id     = module.network.vpc_id
+  subnet_ids = module.network.public_subnet_ids
 }
 
 ############################
@@ -71,35 +71,35 @@ module "alb" {
 ############################
 
 module "ecs_backend" {
-  source               = "./modules/ecs"
-  aws_region           = var.aws_region
-  execution_role_arn   = module.iam.ecs_execution_role_arn
-  image_uri            = "${module.ecr_backend.repository_url}:latest"
-  subnet_ids           = module.network.public_subnet_ids
-  service_sg_id        = module.network.ssh_sg_id
-  target_group_arn     = module.alb.backend_target_group_arn
-  alb_listener_dep     = module.alb
-  vpc_id               = module.network.vpc_id
-  alb_sg_id            = module.alb.alb_sg_id
+  source             = "./modules/ecs"
+  aws_region         = var.aws_region
+  execution_role_arn = module.iam.ecs_execution_role_arn
+  image_uri          = "${module.ecr_backend.repository_url}:latest"
+  subnet_ids         = module.network.public_subnet_ids
+  service_sg_id      = module.network.ssh_sg_id
+  target_group_arn   = module.alb.backend_target_group_arn
+  alb_listener_dep   = module.alb
+  vpc_id             = module.network.vpc_id
+  alb_sg_id          = module.alb.alb_sg_id
 
-  service_name         = "backend"
-  container_port       = 8080
+  service_name   = "backend"
+  container_port = 8080
 }
 
 module "ecs_frontend" {
-  source               = "./modules/ecs"
-  aws_region           = var.aws_region
-  execution_role_arn   = module.iam.ecs_execution_role_arn
-  image_uri            = "${module.ecr_frontend.repository_url}:latest"
-  subnet_ids           = module.network.public_subnet_ids
-  service_sg_id        = module.network.ssh_sg_id
-  target_group_arn     = module.alb.frontend_target_group_arn
-  alb_listener_dep     = module.alb
-  vpc_id               = module.network.vpc_id
-  alb_sg_id            = module.alb.alb_sg_id
+  source             = "./modules/ecs"
+  aws_region         = var.aws_region
+  execution_role_arn = module.iam.ecs_execution_role_arn
+  image_uri          = "${module.ecr_frontend.repository_url}:latest"
+  subnet_ids         = module.network.public_subnet_ids
+  service_sg_id      = module.network.ssh_sg_id
+  target_group_arn   = module.alb.frontend_target_group_arn
+  alb_listener_dep   = module.alb
+  vpc_id             = module.network.vpc_id
+  alb_sg_id          = module.alb.alb_sg_id
 
-  service_name         = "frontend"
-  container_port       = 80
+  service_name   = "frontend"
+  container_port = 80
 }
 
 ############################
