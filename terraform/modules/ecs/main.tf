@@ -3,22 +3,22 @@ resource "aws_ecs_cluster" "this" {
 }
 
 resource "aws_ecs_task_definition" "this" {
-  family                   = "microservices-with-codepipeline-and-ecs-task"
+  family                   = "${var.service_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn        = var.execution_role_arn
+  execution_role_arn       = var.execution_role_arn
 
   container_definitions = jsonencode([
     {
-      name      = "app"
+      name      = var.service_name
       image     = var.image_uri
       essential = true
 
       portMappings = [
         {
-          containerPort = 8080
+          containerPort = var.container_port
           protocol      = "tcp"
         }
       ]
@@ -36,13 +36,13 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = "microservices-with-codepipeline-and-ecs-service"
+  name            = "${var.service_name}-service"
   cluster         = aws_ecs_cluster.this.id
-  task_definition  = aws_ecs_task_definition.this.arn
+  task_definition = aws_ecs_task_definition.this.arn
   launch_type     = "FARGATE"
   desired_count   = 1
 
-  health_check_grace_period_seconds  = 60
+  health_check_grace_period_seconds = 60
 
   deployment_controller {
     type = "ECS"
@@ -57,27 +57,27 @@ resource "aws_ecs_service" "this" {
   }
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [aws_security_group.ecs_service.id]
+    subnets          = var.subnet_ids
+    security_groups  = [aws_security_group.ecs_service.id]
     assign_public_ip = true
   }
 
   load_balancer {
     target_group_arn = var.target_group_arn
-    container_name   = "app"
-    container_port   = 8080
+    container_name   = var.service_name
+    container_port   = var.container_port
   }
 
   depends_on = [var.alb_listener_dep]
 }
 
 resource "aws_security_group" "ecs_service" {
-  name   = "ecs-service-sg"
+  name   = "${var.service_name}-ecs-sg"
   vpc_id = var.vpc_id
 
   ingress {
-    from_port       = 8080
-    to_port         = 8080
+    from_port       = var.container_port
+    to_port         = var.container_port
     protocol        = "tcp"
     security_groups = [var.alb_sg_id]
   }
@@ -91,7 +91,6 @@ resource "aws_security_group" "ecs_service" {
 }
 
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/ecs/microservices-with-codepipeline-and-ecs"
+  name              = "/ecs/${var.service_name}"
   retention_in_days = 7
 }
-
