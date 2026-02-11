@@ -1,5 +1,5 @@
 resource "aws_codebuild_project" "this" {
-  name         = "microservices-with-codepipeline-and-ecs"
+  name         = var.project_name
   service_role = var.role_arn
 
   artifacts {
