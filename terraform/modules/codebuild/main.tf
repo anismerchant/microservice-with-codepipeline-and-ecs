@@ -3,7 +3,7 @@ resource "aws_codebuild_project" "this" {
   service_role = var.role_arn
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -13,14 +13,13 @@ resource "aws_codebuild_project" "this" {
     privileged_mode = true
 
     environment_variable {
-      name  = "ECR_REPO"
+      name  = "ECR_REPO_URI"
       value = var.ecr_repo_url
     }
   }
 
   source {
-    type      = "GITHUB"
-    location  = var.github_repo_url
-    buildspec = "pipeline/buildspec.yml"
+    type      = "CODEPIPELINE"
+    buildspec = var.buildspec_path
   }
 }
