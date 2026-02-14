@@ -13,3 +13,6 @@ terraform-plan.txt
 terraform-apply.txt
 tfplan
 terraform.tfvars
+
+# Node dependencies
+node_modules/
