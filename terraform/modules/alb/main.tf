@@ -56,7 +56,7 @@ resource "aws_lb_target_group" "backend" {
   target_type = "ip"
 
   health_check {
-    path                = "/"
+    path                = "/health" 
     matcher             = "200"
     interval            = 30
     timeout             = 10
