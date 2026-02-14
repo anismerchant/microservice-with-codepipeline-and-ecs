@@ -125,7 +125,7 @@ module "codebuild_frontend" {
 }
 
 ############################
-# CodePipeline (backend only for now)
+# CodePipeline 
 ############################
 
 module "codepipeline" {
