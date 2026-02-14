@@ -8,6 +8,6 @@
   },
   "scripts": {
     "start": "npx serve -s build",
-    "build": "npx esbuild src/App.js --bundle --outfile=build/index.js"
+    "build": "npx esbuild src/App.js --bundle --outfile=build/index.js --loader:.js=jsx"
   }
 }
